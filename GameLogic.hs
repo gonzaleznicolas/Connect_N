@@ -25,13 +25,13 @@ st = BS {
         }
 
 brd1 = let
-  c1 = [Red, Red, Red, Red]
+  c1 = [   Red   ]
   c2 = [   Red   ,  Yellow  ,   Yellow  ,   Red   , Yellow  ] 
-  c3 = [  Yellow ,   Red    ,   Yellow  , Yellow  , Yellow  ]
-  c4 = [   Red   ,  Yellow  ,     Red   ,  Red    ]
-  c5 = [   Red   ,   Yellow ,   Yellow  ]
-  c6 = [  Yellow ,    Red   ,   Yellow  ]
-  c7 = [   Red   ,   Yellow ,   Yellow  ,  Red    ,   Red   ,  Yellow]
+  c3 = [  Yellow ,   Red    ,   Yellow  ,   Red   , Yellow  ]
+  c4 = [   Red   ,  Yellow  ,   Yellow  , Yellow  ]
+  c5 = [   Red   ,   Yellow ,   Green    ]
+  c6 = [  Yellow ,    Red   ,    Red    ]
+  c7 = [  Yellow ,   Yellow ,   Yellow  ,  Red    ,   Red   ,  Yellow]
   in
   [c1, c2, c3, c4, c5, c6, c7]
 
@@ -50,6 +50,7 @@ instance Show Piece where
     show Red = "R"
     show Yellow = "Y"
     show Green = "G"
+
 
 
 type Column = [Piece]
@@ -366,20 +367,41 @@ myfoldr f n (x:l) = f x (foldr f n l)
 -- the count must be initially 0
 -- winFlag must be initially false
 arrayWinChecker :: (Piece, Int, Int, [Maybe Piece], Bool) -> Bool
-arrayWinChecker (color, n, count, list , winFlag) = myCheckWinHelper (color, n, count, (list ++ [Nothing]), winFlag)
+arrayWinChecker (color, n, count, list , winFlag) = myCheckWinHelper (color, n, count, (list ++ [Nothing]), winFlag, False)
+
+
+
 
 -- this function takes in a piece (Yellow or Red) and an array [Maybe Piece].
 -- It returns true if array contains n consecutive pieces of color (exception: exactly one has to be green). Otherwise it returns false.
 -- the count must be initially 0
 -- winFlag must be initially false
-myCheckWinHelper :: (Piece, Int, Int, [Maybe Piece], Bool) -> Bool
-myCheckWinHelper (color, n, count, [], winFlag) = winFlag -- since the array is empty, we are done reading the array
-myCheckWinHelper (color, n, count, x:xs, winFlag) = if (count == n) --player won
+myCheckWinHelper :: (Piece, Int, Int, [Maybe Piece], Bool, Bool) -> Bool
+myCheckWinHelper (color, n, count, [], winFlag, greenFlag) = winFlag -- since the array is empty, we are done reading the array
+myCheckWinHelper (color, n, count, x:xs, winFlag, greenFlag) = if ((count == n) && greenFlag == True)
+                                                              then True
+                                                              else( -- in the reading we have done so far, no player has won
+                                                                 if (x == (Just Green))
+                                                                 then (myCheckWinHelper (color, n, count+1, xs, False, True))
+                                                                 else
+                                                                   if (x == (Just color)) -- read a piece of the color we are interested in
+                                                                   then (myCheckWinHelper (color, n, count+1, xs, False, greenFlag))
+                                                                   else (myCheckWinHelper (color, n, 0, xs, False, False)))
+
+
+
+{-
+
+myCheckWinHelper :: (Piece, Int, Int, [Maybe Piece], Bool, Bool) -> Bool
+myCheckWinHelper (color, n, count, [], winFlag, b) = winFlag -- since the array is empty, we are done reading the array
+myCheckWinHelper (color, n, count, x:xs, winFlag, b) = if (count == n) --player won
                                                   then True
                                                   else( -- in the reading we have done so far, no player has won
                                                      if (x == (Just color)) -- read a piece of the color we are interested in
-                                                     then (myCheckWinHelper (color, n, count+1, xs, False))
-                                                     else (myCheckWinHelper (color, n, 0, xs, False)))
+                                                     then (myCheckWinHelper (color, n, count+1, xs, False, b))
+                                                     else (myCheckWinHelper (color, n, 0, xs, False, b)))
+
+-}
 
 
 -- this function takes a piece (Yellow or red), a number n (number of consecutive pieces neded to win),
