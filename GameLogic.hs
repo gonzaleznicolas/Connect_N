@@ -24,8 +24,26 @@ st = BS {
         numToConnect = 5
         }
 
+brd1 = let
+  c1 = [Red, Red, Red, Red]
+  c2 = [   Red   ,  Yellow  ,   Yellow  ,   Red   , Yellow  ] 
+  c3 = [  Yellow ,   Red    ,   Yellow  , Yellow  , Yellow  ]
+  c4 = [   Red   ,  Yellow  ,     Red   ,  Red    ]
+  c5 = [   Red   ,   Yellow ,   Yellow  ]
+  c6 = [  Yellow ,    Red   ,   Yellow  ]
+  c7 = [   Red   ,   Yellow ,   Yellow  ,  Red    ,   Red   ,  Yellow]
+  in
+  [c1, c2, c3, c4, c5, c6, c7]
 
-data Piece = Red | Yellow 
+st1 = BS {
+        theBoard = brd1,
+        lastMove = Red,
+        numColumns = 7,
+        numRows = 6,
+        numToConnect = 4
+        }
+
+data Piece = Red | Yellow | Green
     deriving(Eq)
 
 instance Show Piece where
@@ -265,25 +283,7 @@ flipLastMove bs = BS {
             numRows = numRows bs,
             numToConnect = numToConnect bs
             }
-{-
-decrementNumToConnect :: BoardState -> Int -> BoardState
-decrementNumToConnect bs n = BS {
-            theBoard = theBoard bs,
-            lastMove = lastMove bs,
-            numColumns = numColumns bs,
-            numRows = numRows bs,
-            numToConnect = ((numToConnect bs) - n)
-            }
 
-setNumToConnect :: BoardState -> Int -> BoardState
-setNumToConnect bs n = BS {
-            theBoard = theBoard bs,
-            lastMove = lastMove bs,
-            numColumns = numColumns bs,
-            numRows = numRows bs,
-            numToConnect = n
-            }
--}
 
 -- returns Nothing if there is no winning move, Just <columns of winning move> if there is a winning move
 checkIfAnyMoveIsAWin :: BoardState -> Maybe Int
@@ -333,3 +333,49 @@ myCheckBoardFull bs =
 oppositePiece :: Piece -> Piece
 oppositePiece Yellow = Red
 oppositePiece Red = Yellow
+
+
+-- returns Just colorInQuestion if colorInQuestion won. Returns Nothing if no one has won
+myCheckWin :: BoardState -> Piece -> Maybe Piece
+myCheckWin st colorInQuestion = let
+                n = numToConnect st
+                columnsWin = twoDarrayWinChecker(colorInQuestion, n, columns st, False)
+                rowsWin = twoDarrayWinChecker(colorInQuestion, n, rows st, False)
+                diagForwardWin = twoDarrayWinChecker(colorInQuestion, n, diagonalsForward st, False)
+                diagBackwardWin = twoDarrayWinChecker(colorInQuestion, n, diagonalsBackward st, False)
+              in
+                if (columnsWin || rowsWin || diagForwardWin || diagBackwardWin) then Just colorInQuestion else Nothing
+
+myfoldr :: (a -> b -> b) -> b -> [a] -> b
+myfoldr f n [] = n
+myfoldr f n (x:l) = f x (foldr f n l)
+
+
+-- this function takes in a piece (Yellow or Red) and an array [Maybe Piece].
+-- It returns true if array contains n consecutive pieces of color. Otherwise it returns false.
+-- the count must be initially 0
+-- winFlag must be initially false
+arrayWinChecker :: (Piece, Int, Int, [Maybe Piece], Bool) -> Bool
+arrayWinChecker (color, n, count, list , winFlag) = myCheckWinHelper (color, n, count, (list ++ [Nothing]), winFlag)
+
+-- this function takes in a piece (Yellow or Red) and an array [Maybe Piece].
+-- It returns true if array contains n consecutive pieces of color. Otherwise it returns false.
+-- the count must be initially 0
+-- winFlag must be initially false
+myCheckWinHelper :: (Piece, Int, Int, [Maybe Piece], Bool) -> Bool
+myCheckWinHelper (color, n, count, [], winFlag) = winFlag -- since the array is empty, we are done reading the array
+myCheckWinHelper (color, n, count, x:xs, winFlag) = if (count == n) --player won
+                                                  then True
+                                                  else( -- in the reading we have done so far, no player has won
+                                                     if (x == (Just color)) -- read a piece of the color we are interested in
+                                                     then (myCheckWinHelper (color, n, count+1, xs, False))
+                                                     else (myCheckWinHelper (color, n, 0, xs, False)))
+
+
+-- this function takes a piece (Yellow or red), a number n (number of consecutive pieces neded to win),
+-- a 2d array [[Maybe Piece]], and a winFlag which must initially be false
+-- twoDarrayWinChecker returns true if in any of the subarrays, there are n concecutive piece. False otherwise
+twoDarrayWinChecker :: (Piece, Int, [[Maybe Piece]], Bool) -> Bool
+twoDarrayWinChecker (color, n, ary, True) = True -- if any subarray found a win, return win
+twoDarrayWinChecker (color, n, [], winFlag) = False -- if the array is empty, we have looked through all the subarrays and found no wins. return false
+twoDarrayWinChecker (color, n, x:xs, False) = twoDarrayWinChecker (color, n, xs, arrayWinChecker (color, n, 0, x, False))
