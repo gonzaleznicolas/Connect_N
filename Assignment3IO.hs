@@ -38,14 +38,14 @@ This is too close to one of the functions you must implement, so
 I left it undefined, for now.
 
 This checks to see if all columns are full.
-
+-}
 checkBoardFull :: BoardState -> Bool
 checkBoardFull bs = 
     let 
         cols = theBoard bs
     in
         all (\col -> length col == numRows bs) cols 
--}
+
 
 
 myFunction bs moved1 moved2 = if (lastMove bs == Yellow) then moved1 else moved2
@@ -55,12 +55,15 @@ playGameAvail bs = do
     putStrLn $ "enter column number of next move: 1 - " ++ show (numColumns bs)
 
     nextMove1 <- getLine
-    --let nextMove2 = unJust (suggestMove bs)
+    --let nextMove1 = unJust (suggestMove bs)
+    let nextMove2 = unJust (suggestMove bs)
 
     let moved1 = makeMove bs (read nextMove1 :: Int)
-    --let moved2 = makeMove bs nextMove2
+    let moved2 = makeMove bs nextMove2
+    --let moved1 = makeMove bs nextMove1
 
-    let moved = moved1 --myFunction bs moved1 moved2
+
+    let moved = myFunction bs moved1 moved2
 
     case moved of 
         Nothing -> do

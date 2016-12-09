@@ -1,7 +1,6 @@
-module GameLogic where 
+module SuggestMove where 
 
 import Data.List (transpose)
-import System.Random
 
 -- THINGS FOR TESTING PURPOSES
 
@@ -223,24 +222,22 @@ suggestMove :: BoardState -> Maybe Int
 suggestMove bs = if (myCheckBoardFull bs) then Nothing
                  else  -- board is not full
                      -- check if you can make a winning move
-                     if (checkIfAnyMoveIsAWin bs == Nothing) then
-                         -- there is no winning move
-                         -- check if your opponent can make a winning move
-                         if (checkIfOpponentCanWin bs == Nothing) then
-                                 -- the opponent cant win in their next move
-                                 chooseMove bs --ask chooseMove where to place it
+                     if (checkIfAnyMoveIsAWin bs == Nothing) then -- there is no winning move
+                         if (checkIfOpponentCanWin bs == Nothing) then -- the opponent cant win in their next move
+                                 if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 1) == Nothing) then -- you cant connect numToCnnect - 1
+                                     if (checkIfOpponentCanWin (decrementNumToConnect bs 1) == Nothing) then -- your opponent cant connect numToCnnect - 1
+                                         selectMove bs -- place it selectMove
+                                     else
+                                         checkIfOpponentCanWin (decrementNumToConnect bs 1) -- if here, your opponent can connect numToCnnect - 1. block it.
+                                 else
+                                     checkIfAnyMoveIsAWin (decrementNumToConnect bs 1) -- if here, you can connect numToCnnect - 1. do it.
                          else
                              checkIfOpponentCanWin bs -- if here, the opponent has a winning move, block it
-                     else
+                     else  -- there is a winning move
                          checkIfAnyMoveIsAWin bs  -- if here, there is a winning move, return the winning move
 
 
--- chooses a random number 1<= n <= (numColumns bs). If column n is full, it tries again. does this 3 times. If all are full, it asks selectMove
-chooseMove :: BoardState -> Maybe Int
-chooseMove bs = selectMove bs
-
-
--- returns Just num of a column that is not full. Nothing if all are full
+-- returns an Maybe Int of a column that is not full. Nothing if all are full
 selectMove :: BoardState -> Maybe Int
 selectMove bs = selectMoveHelper(bs, if ((numColumns bs)-3 >= 1) then ((numColumns bs)-3) else (if ((numColumns bs)-2 >= 1) then ((numColumns bs)-2) else (numColumns bs)), numColumns bs)
 
@@ -251,7 +248,6 @@ selectMoveHelper(bs, currentCol, numTries) = if ((makeMove bs currentCol) == Not
                                    selectMoveHelper(bs, (currentCol - 1), (numTries - 1)) -- if the currentCol is full, check next col
                                 else
                                    Just currentCol
-
 
 checkIfOpponentCanWin :: BoardState -> Maybe Int
 checkIfOpponentCanWin bs = ciamiawHelper (flipLastMove bs, numColumns bs)
@@ -265,7 +261,7 @@ flipLastMove bs = BS {
             numRows = numRows bs,
             numToConnect = numToConnect bs
             }
-{-
+
 decrementNumToConnect :: BoardState -> Int -> BoardState
 decrementNumToConnect bs n = BS {
             theBoard = theBoard bs,
@@ -283,7 +279,6 @@ setNumToConnect bs n = BS {
             numRows = numRows bs,
             numToConnect = n
             }
--}
 
 -- returns Nothing if there is no winning move, Just <columns of winning move> if there is a winning move
 checkIfAnyMoveIsAWin :: BoardState -> Maybe Int
@@ -301,10 +296,13 @@ ciamiawHelper(bs, currentCol) = if ((makeMove bs currentCol) == Nothing) then
                                     modifiedBoard = unJust (makeMove bs currentCol)
                                     winner = checkWin modifiedBoard
                                   in
-                                    if (winner == Just colorPlaying) then
-                                      (Just currentCol)
+                                    if ((winner == Just colorPlaying) && currentCol == (numColumns bs))then
+                                      Just currentCol --selectMove bs
                                     else
-                                      ciamiawHelper(bs, (currentCol - 1))
+                                      if (winner == Just colorPlaying) then
+                                        (Just currentCol)
+                                      else
+                                        ciamiawHelper(bs, (currentCol - 1))
 
 
 -- returns Nothing if not a win, Just col if dropping in col is a win
