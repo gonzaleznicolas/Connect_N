@@ -49,6 +49,7 @@ data Piece = Red | Yellow | Green
 instance Show Piece where
     show Red = "R"
     show Yellow = "Y"
+    show Green = "G"
 
 
 type Column = [Piece]
@@ -284,6 +285,15 @@ flipLastMove bs = BS {
             numToConnect = numToConnect bs
             }
 
+decrementNumToConnect :: BoardState -> Int -> BoardState
+decrementNumToConnect bs n = BS {
+            theBoard = theBoard bs,
+            lastMove = lastMove bs,
+            numColumns = numColumns bs,
+            numRows = numRows bs,
+            numToConnect = ((numToConnect bs) - n)
+            }
+
 
 -- returns Nothing if there is no winning move, Just <columns of winning move> if there is a winning move
 checkIfAnyMoveIsAWin :: BoardState -> Maybe Int
@@ -335,7 +345,7 @@ oppositePiece Yellow = Red
 oppositePiece Red = Yellow
 
 
--- returns Just colorInQuestion if colorInQuestion won. Returns Nothing if no one has won
+-- returns Just colorInQuestion if colorInQuestion won and its winning streak contains exactly 1 Green anywhere in it. Returns Nothing otherwise.
 myCheckWin :: BoardState -> Piece -> Maybe Piece
 myCheckWin st colorInQuestion = let
                 n = numToConnect st
@@ -359,7 +369,7 @@ arrayWinChecker :: (Piece, Int, Int, [Maybe Piece], Bool) -> Bool
 arrayWinChecker (color, n, count, list , winFlag) = myCheckWinHelper (color, n, count, (list ++ [Nothing]), winFlag)
 
 -- this function takes in a piece (Yellow or Red) and an array [Maybe Piece].
--- It returns true if array contains n consecutive pieces of color. Otherwise it returns false.
+-- It returns true if array contains n consecutive pieces of color (exception: exactly one has to be green). Otherwise it returns false.
 -- the count must be initially 0
 -- winFlag must be initially false
 myCheckWinHelper :: (Piece, Int, Int, [Maybe Piece], Bool) -> Bool
@@ -379,3 +389,31 @@ twoDarrayWinChecker :: (Piece, Int, [[Maybe Piece]], Bool) -> Bool
 twoDarrayWinChecker (color, n, ary, True) = True -- if any subarray found a win, return win
 twoDarrayWinChecker (color, n, [], winFlag) = False -- if the array is empty, we have looked through all the subarrays and found no wins. return false
 twoDarrayWinChecker (color, n, x:xs, False) = twoDarrayWinChecker (color, n, xs, arrayWinChecker (color, n, 0, x, False))
+
+
+-- the Int is the column (column numbering starts at 1) into which we want to drop a piece of color color
+myMakeMove :: BoardState -> Int -> Piece -> Maybe BoardState
+myMakeMove state n color = if ((length columnInQuestion) == numRows state) then Nothing else Just $
+            BS {
+            theBoard = newBoard,
+            lastMove = newPiece,
+            numColumns = (numColumns state),
+            numRows = (numRows state),
+            numToConnect = (numToConnect state)
+            }
+    where
+        -- "n-1" in the lines below is because replaceElemAt and elemAt assume indexing starts at zero. But columns are numbered starting with 1.
+        columnInQuestion = elemAt (n-1) (theBoard state)
+        updatedColumn = columnInQuestion ++ [color]
+        newBoard = replaceElemAt (n-1) (theBoard state) updatedColumn
+        newPiece = oppositePiece (lastMove state)
+
+
+-- replaces the element in list l at index n with element. indexes start at 0.
+replaceElemAt:: Int -> [a] -> a -> [a]
+replaceElemAt n l element =(fst (splitAt n l) ++ [element]) ++ (tail (snd (splitAt n l )))
+
+-- elemAt defined in lecture. takes and index and a list and returns the element at that index. indexes start at 0.
+elemAt :: Int -> [a] -> a
+elemAt 0 (x:xs) = x
+elemAt n (x:xs) = elemAt (n-1) xs
