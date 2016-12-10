@@ -243,26 +243,59 @@ suggestMove :: BoardState -> Maybe Int
 suggestMove bs = if (myCheckBoardFull bs) then Nothing
                  else  -- board is not full
                      -- check if you can make a winning move
-                     if (checkIfAnyMoveIsAWin bs == Nothing) then
-                         -- there is no winning move
-                         -- check if your opponent can make a winning move
+                     if (checkIfAnyMoveIsAWin bs == Nothing) then  --there is no winning move,check if your opponent can make a winning move
                          if (checkIfOpponentCanWin bs == Nothing) then
-                                 -- the opponent cant win in their next move
-                                 chooseMove bs --ask chooseMove where to place it
-                         else
-                             checkIfOpponentCanWin bs -- if here, the opponent has a winning move, block it
-                     else
-                         checkIfAnyMoveIsAWin bs  -- if here, there is a winning move, return the winning move
+                             if ((numToConnect bs - 1) > 1) then
+                                 if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 1) == Nothing) then
+                                     if (checkIfOpponentCanWin (decrementNumToConnect bs 1) == Nothing) then
+                                         if ((numToConnect bs - 2) > 1) then
+                                             if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 2) == Nothing) then
+                                                 if (checkIfOpponentCanWin (decrementNumToConnect bs 2) == Nothing) then
+                                                     if ((numToConnect bs - 3) > 1) then
+                                                         if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 3) == Nothing) then
+                                                             if (checkIfOpponentCanWin (decrementNumToConnect bs 3) == Nothing) then
+                                                                 if ((numToConnect bs - 4) > 1) then
+                                                                    if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 4) == Nothing) then
+                                                                         if (checkIfOpponentCanWin (decrementNumToConnect bs 4) == Nothing) then
+
+                                                                             if (checkIfAnyMoveIsAWin (setNumToConnect bs 2) == Nothing) then
+                                                                                 selectMove bs
+                                                                             else checkIfAnyMoveIsAWin (setNumToConnect bs 2)
+
+                                                                         else checkIfOpponentCanWin (decrementNumToConnect bs 4)
+                                                                    else checkIfAnyMoveIsAWin (decrementNumToConnect bs 4)
+                                                                 else selectMove bs
+                                                             else checkIfOpponentCanWin (decrementNumToConnect bs 3)
+                                                         else checkIfAnyMoveIsAWin (decrementNumToConnect bs 3)
+                                                     else selectMove bs
+                                                 else checkIfOpponentCanWin (decrementNumToConnect bs 2)
+                                             else checkIfAnyMoveIsAWin (decrementNumToConnect bs 2)
+                                         else selectMove bs
+                                     else checkIfOpponentCanWin (decrementNumToConnect bs 1)
+                                 else checkIfAnyMoveIsAWin (decrementNumToConnect bs 1)
+                             else selectMove bs
+                         else checkIfOpponentCanWin bs -- if here, the opponent has a winning move, block it
+                     else checkIfAnyMoveIsAWin bs  -- if here, there is a winning move, return the winning move
 
 
--- chooses a random number 1<= n <= (numColumns bs). If column n is full, it tries again. does this 3 times. If all are full, it asks selectMove
-chooseMove :: BoardState -> Maybe Int
-chooseMove bs = selectMove bs
+
 
 
 -- returns Just num of a column that is not full. Nothing if all are full
 selectMove :: BoardState -> Maybe Int
-selectMove bs = selectMoveHelper(bs, if ((numColumns bs)-3 >= 1) then ((numColumns bs)-3) else (if ((numColumns bs)-2 >= 1) then ((numColumns bs)-2) else (numColumns bs)), numColumns bs)
+selectMove bs = let
+                   startingCol = if (numColumns bs)-3 >= 1 then
+                                    ((numColumns bs)-3)
+                                 else
+                                     if (numColumns bs)-2 >= 1 then
+                                        ((numColumns bs)-2)
+                                     else 
+                                        if (numColumns bs)-2 >= 1 then 
+                                            ((numColumns bs)-2)
+                                        else (numColumns bs)
+                in
+                   selectMoveHelper(bs, startingCol, numColumns bs)
+
 
 selectMoveHelper :: (BoardState, Int, Int) -> Maybe Int
 selectMoveHelper(bs, currentCol, 0) = Nothing
@@ -295,6 +328,14 @@ decrementNumToConnect bs n = BS {
             numToConnect = ((numToConnect bs) - n)
             }
 
+setNumToConnect :: BoardState -> Int -> BoardState
+setNumToConnect bs n = BS {
+            theBoard = theBoard bs,
+            lastMove = lastMove bs,
+            numColumns = numColumns bs,
+            numRows = numRows bs,
+            numToConnect = n
+            }
 
 -- returns Nothing if there is no winning move, Just <columns of winning move> if there is a winning move
 checkIfAnyMoveIsAWin :: BoardState -> Maybe Int
@@ -304,29 +345,19 @@ checkIfAnyMoveIsAWin bs = ciamiawHelper (bs, numColumns bs)
 -- ciamiawHelper returns Just <column of winning move> if there is one, Nothing is there is no winning move
 ciamiawHelper :: (BoardState, Int) -> Maybe Int
 ciamiawHelper(bs, 0) = Nothing -- reached column 0, there is no move that is a win
-ciamiawHelper(bs, currentCol) = if ((makeMove bs currentCol) == Nothing) then
+ciamiawHelper(bs, currentCol) = if ((myMakeMove bs currentCol Green) == Nothing) then
                                    ciamiawHelper(bs, (currentCol - 1)) -- if the curretCol is full, check next col
                                 else
                                   let
                                     colorPlaying = oppositePiece (lastMove bs)
-                                    modifiedBoard = unJust (makeMove bs currentCol)
-                                    winner = checkWin modifiedBoard
+                                    modifiedBoard = unJust (myMakeMove bs currentCol Green)
+                                    winner = myCheckWin modifiedBoard colorPlaying
                                   in
                                     if (winner == Just colorPlaying) then
                                       (Just currentCol)
                                     else
                                       ciamiawHelper(bs, (currentCol - 1))
 
-
--- returns Nothing if not a win, Just col if dropping in col is a win
-checkIfMoveIsAWin :: BoardState -> Int -> Maybe Int
-checkIfMoveIsAWin bs col = if ((makeMove bs col) == Nothing) then Nothing else -- return nothing if the columns you are trying to drop in is full
-                           let
-                             colorPlaying = oppositePiece (lastMove bs)
-                             modifiedBoard = unJust (makeMove bs col)
-                             winner = checkWin modifiedBoard
-                           in
-                             if (winner == Just colorPlaying) then (Just col) else Nothing
 
 
 --removes Just
