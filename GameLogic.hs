@@ -239,6 +239,15 @@ egBoard = BS {
   }
 
 
+{-
+Everything below is by Nicolas Gonzalez
+Student ID # : 10151261
+CPSC 449, Fall 2016
+University Of Calgary
+December 9th, 2016
+-}
+
+-- Takes a board state. Suggests a move for the player whose turn it is next. Returns nothing if the board is full.
 suggestMove :: BoardState -> Maybe Int
 suggestMove bs = if (myCheckBoardFull bs) then Nothing
                  else
@@ -402,20 +411,6 @@ myCheckWinHelper (color, n, count, x:xs, winFlag, greenFlag) = if ((count == n) 
                                                                    then (myCheckWinHelper (color, n, count+1, xs, False, greenFlag))
                                                                    else (myCheckWinHelper (color, n, 0, xs, False, False)))
 
-
-
-{-
-
-myCheckWinHelper :: (Piece, Int, Int, [Maybe Piece], Bool, Bool) -> Bool
-myCheckWinHelper (color, n, count, [], winFlag, b) = winFlag -- since the array is empty, we are done reading the array
-myCheckWinHelper (color, n, count, x:xs, winFlag, b) = if (count == n) --player won
-                                                  then True
-                                                  else( -- in the reading we have done so far, no player has won
-                                                     if (x == (Just color)) -- read a piece of the color we are interested in
-                                                     then (myCheckWinHelper (color, n, count+1, xs, False, b))
-                                                     else (myCheckWinHelper (color, n, 0, xs, False, b)))
-
--}
 
 
 -- this function takes a piece (Yellow or red), a number n (number of consecutive pieces neded to win),
