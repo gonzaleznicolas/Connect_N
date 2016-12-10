@@ -6,12 +6,12 @@ import System.Random
 -- THINGS FOR TESTING PURPOSES
 
 brd = let
-  c1 = [Yellow,Yellow,Yellow] --  Red   ,   Red    ,     Red   ,   Red   , Yellow  ]
+  c1 = [Yellow,Yellow,Yellow, Red] --  Red   ,   Red    ,     Red   ,   Red   , Yellow  ]
   c2 = [Yellow,Yellow,Yellow,Yellow] --   Red   ,  Yellow  ,   Yellow  ,   Red   , Yellow  ] 
   c3 = [Red,Yellow,Yellow,Yellow] --  Yellow ,   Red    ,   Yellow  ,   Red   , Yellow  ]
   c4 = [Yellow,Yellow,Yellow,Yellow] --   Red   ,  Yellow  ]
   c5 = [Yellow,Yellow,Yellow,Yellow] --   Red   ,   Yellow ,    Red    ]
-  c6 = [Red,Yellow,Yellow,Yellow] --  Yellow ,    Red   ,   Yellow  ]
+  c6 = [Red,Yellow,Yellow] --  Yellow ,    Red   ,   Yellow  ]
   c7 = [Yellow,Yellow,Yellow,Yellow]
   in
   [c1, c2, c3, c4, c5, c6, c7]
@@ -241,42 +241,25 @@ egBoard = BS {
 
 suggestMove :: BoardState -> Maybe Int
 suggestMove bs = if (myCheckBoardFull bs) then Nothing
-                 else  -- board is not full
-                     -- check if you can make a winning move
-                     if (checkIfAnyMoveIsAWin bs == Nothing) then  --there is no winning move,check if your opponent can make a winning move
-                         if (checkIfOpponentCanWin bs == Nothing) then
-                             if ((numToConnect bs - 1) > 1) then
-                                 if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 1) == Nothing) then
-                                     if (checkIfOpponentCanWin (decrementNumToConnect bs 1) == Nothing) then
-                                         if ((numToConnect bs - 2) > 1) then
-                                             if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 2) == Nothing) then
-                                                 if (checkIfOpponentCanWin (decrementNumToConnect bs 2) == Nothing) then
-                                                     if ((numToConnect bs - 3) > 1) then
-                                                         if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 3) == Nothing) then
-                                                             if (checkIfOpponentCanWin (decrementNumToConnect bs 3) == Nothing) then
-                                                                 if ((numToConnect bs - 4) > 1) then
-                                                                    if (checkIfAnyMoveIsAWin (decrementNumToConnect bs 4) == Nothing) then
-                                                                         if (checkIfOpponentCanWin (decrementNumToConnect bs 4) == Nothing) then
+                 else
+                     suggestMoveHelper (bs, 0, numToConnect bs)
 
-                                                                             if (checkIfAnyMoveIsAWin (setNumToConnect bs 2) == Nothing) then
-                                                                                 selectMove bs
-                                                                             else checkIfAnyMoveIsAWin (setNumToConnect bs 2)
-
-                                                                         else checkIfOpponentCanWin (decrementNumToConnect bs 4)
-                                                                    else checkIfAnyMoveIsAWin (decrementNumToConnect bs 4)
-                                                                 else selectMove bs
-                                                             else checkIfOpponentCanWin (decrementNumToConnect bs 3)
-                                                         else checkIfAnyMoveIsAWin (decrementNumToConnect bs 3)
-                                                     else selectMove bs
-                                                 else checkIfOpponentCanWin (decrementNumToConnect bs 2)
-                                             else checkIfAnyMoveIsAWin (decrementNumToConnect bs 2)
-                                         else selectMove bs
-                                     else checkIfOpponentCanWin (decrementNumToConnect bs 1)
-                                 else checkIfAnyMoveIsAWin (decrementNumToConnect bs 1)
-                             else selectMove bs
-                         else checkIfOpponentCanWin bs -- if here, the opponent has a winning move, block it
-                     else checkIfAnyMoveIsAWin bs  -- if here, there is a winning move, return the winning move
-
+--precondition: board is not full
+suggestMoveHelper :: (BoardState, Int, Int) -> Maybe Int
+suggestMoveHelper (bs, sub, n) = if (sub >= (n - 1)) then  -- if we are just trying to find a place to drop that completes 1 in a row, then just place it anywhere where there is space
+                                     selectMove bs
+                                 else
+                                     if (checkIfAnyMoveIsAWin (decrementNumToConnect bs sub) == Nothing) then
+                                         -- if here, it was not possible to connect n-sub, see if the opponent can connect n-sub
+                                         if (checkIfOpponentCanWin (decrementNumToConnect bs sub) == Nothing) then
+                                             -- if here, not you and not your opponent can make a move to connect n-sub. So check for n-(sub+1)
+                                             suggestMoveHelper(bs, (sub + 1), n)
+                                         else 
+                                            -- if here, your opponent can connect n-sub. block it
+                                            checkIfOpponentCanWin (decrementNumToConnect bs sub)
+                                     else
+                                         -- if here, you can connect n-sub. Do it.
+                                         checkIfAnyMoveIsAWin (decrementNumToConnect bs sub)
 
 
 
